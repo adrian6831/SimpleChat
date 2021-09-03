@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Chat</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .button {
+            cursor: pointer;
+            transition: all 0.2s linear;
+        }
+
+        .center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        body {
+            background-color: #edeff2;
+            font-family:"Times New Roman", Arial, sans-serif;
+        }
+
+        .chat_window {
+            position: absolute;
+            max-width: 500px;
+            max-height: 800px;
+            width: calc(100% - 40px);
+            height: calc(100% - 20px);
+            border-radius: 25px;
+            box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            background-color: #f8f8f8;
+        }
+
+        .top_menu {
+            background-color: #fff;
+            width: 100%;
+            padding: 15px 10px 10px;
+            height: 50px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .top_menu .buttons {
+            width: 80px;
+            position: absolute;
+        }
+
+        .top_menu .buttons .button {
+            width: 16px;
+            height: 16px;
+            border-radius: 20%;
+            display: inline-block;
+            margin-right: 4px;
+            background-color: lightcoral;
+        }
+
+        .top_menu .buttons .button.close {
+            background-color: lightcoral;
+        }
+
+        .top_menu .title {
+            text-align: center;
+            color: #bcbdc0;
+            font-weight: lighter;
+            font-size: large;
+        }
+
+        .messages {
+            position: relative;
+            list-style: none;
+            padding: 10px 0 0 10px;
+            height: calc(100% - 140px);
+            width: 100%;
+            overflow: scroll;
+        }
+
+        .messages .message {
+            margin-bottom: 20px;
+        }
+        .messages .message .username {
+            float: left;
+            width: 50%;
+            font-size: 12px;
+        }
+
+        .messages .message .date {
+            float: left;
+            text-align: right;
+            width: 50%;
+            font-size: 12px;
+        }
+
+        .messages .message .text_wrapper {
+            background: antiquewhite;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            border: 1px solid #dddddd;
+            font-size: 20px;
+        }
+
+        .bottom_wrapper {
+            position: absolute;
+            height: 90px;
+            width: 100%;
+            background-color: #fff;
+            padding: 25px 20px 15px;
+            bottom: 0;
+        }
+
+        .bottom_wrapper .message_input_wrapper {
+            display: inline-block;
+            height: 50px;
+            border-radius: 15px;
+            border: 1px solid #bcbdc0;
+            width: calc(100% - 120px);
+            position: relative;
+            padding: 0 20px;
+        }
+
+        .bottom_wrapper .message_input_wrapper .message_input {
+            border: none;
+            height: 100%;
+            width: calc(100% - 40px);
+            position: absolute;
+            color: gray;
+        }
+
+        .bottom_wrapper .buttons {
+            width: 120px;
+            float: right;
+        }
+
+        .bottom_wrapper .buttons .button {
+            width: 50px;
+            height: 50px;
+            display: inline-block;
+            border-radius: 50px;
+            float: left;
+            margin-left: 10px;
+        }
+        .bottom_wrapper .buttons .emoji {
+            background-color: #fffceb;
+        }
+
+        .bottom_wrapper .buttons .file {
+            background-color: #e9f5f8;
+        }
+
+        .bottom_wrapper .buttons .emoji:hover {
+            background-color: gold;
+        }
+
+        .bottom_wrapper .buttons .file:hover {
+            background-color: lightskyblue;
+        }
+
+        .bottom_wrapper .buttons .text {
+            font-size: 36px;
+            float: left;
+            padding-left: 7px;
+            padding-top: 3px;
+        }
+
+        .message_template {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class = "chat_window center">
+    <div class="top_menu">
+        <div class="buttons">
+            <div class="button close" onclick="logout()"></div>
+        </div>
+        <div class="title">Simple Chat</div>
+    </div>
+    <ul class="messages" id="message_field"></ul>
+    <div class="bottom_wrapper">
+        <div class="message_input_wrapper">
+            <input class="message_input" placeholder="Type your message here..."/>
+        </div>
+        <div class="buttons">
+            <div class="emoji button">
+                <div class="text">&#128512</div>
+            </div>
+            <div class="file button">
+                <div class="text">&#128193</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="message_template">
+    <li class="message">
+        <div class="username"></div>
+        <div class="date"></div>
+        <div class="text_wrapper">
+            <div class="text"></div>
+        </div>
+    </li>
+</div>
+</body>
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    let socket = io();
+    let input_field = document.getElementsByClassName("message_input")[0];
+
+    function sendMessage() {
+        let message = input_field.value;
+        if (message.length > 600) {
+            alert("Message is too long");
+        } else {
+            socket.emit("send_message", {id: socket.id, message: message})
+        }
+    }
+
+    function logout() {
+        socket.emit("logout", {placeholder: 'placeholder'});
+        window.location.href = '/';
+    }
+
+    input_field.addEventListener("keyup", function(event) {
+        if (event.key === "Enter") {
+            if (input_field.value.trim() === '') {
+                return;
+            } else {
+                sendMessage();
+            }
+            input_field.value = '';
+        }
+    });
+
+    socket.on('refresh', function (data) {
+        let messages = data.messages;
+        let ul = document.getElementById('message_field');
+        ul.innerHTML = "";
+        messages.forEach(function (m) {
+            const li = document.createElement("li");
+            li.className = 'message';
+            li.innerHTML =
+                '<div class="username">' + m.username +'</div>' +
+                '<div class="date">' + m.date + '</div>' +
+                '<div class="text_wrapper">' +
+                    '<div class="text">' + m.message + '</div>' +
+                '</div>';
+            ul.appendChild(li);
+        })
+    })
+</script>
+</html>
