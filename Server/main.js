@@ -11,6 +11,7 @@ var connection = mysql.createConnection({
     database : 'simplechat'
 });
 
+
 var app = express();
 app.use(session({
     secret: 'secret',
